@@ -5,55 +5,50 @@ import rl "vendor:raylib"
 
 Player :: struct {
     
-    is_moving : bool,
     speed : f32,
     radius : f32,
+    direction : rl.Vector2,
     position : rl.Vector2,
-    initial_position : rl.Vector2,
-    velocity : rl.Vector2,
     color : rl.Color,
 }
 
 update_player :: proc(player : ^Player, cells : []Cell, grid_origin : rl.Vector2, deltaTime : f32) {
 
-    if !player.is_moving {
+    player.direction.x = f32(int(rl.IsKeyDown(rl.KeyboardKey.RIGHT)) - int(rl.IsKeyDown(rl.KeyboardKey.LEFT)));
+    player.direction.y = f32(int(rl.IsKeyDown(rl.KeyboardKey.DOWN)) - int(rl.IsKeyDown(rl.KeyboardKey.UP)));
 
-        if rl.IsKeyDown(rl.KeyboardKey.RIGHT) {
+    point_to_check := player.position.xy + player.direction.xy;
 
-            player.velocity.x = player.speed;
-        
-        } else if rl.IsKeyDown(rl.KeyboardKey.LEFT) {
+    next_x := int(point_to_check.x + CELL_SIZE.x / 2) % int(CELL_COUNT.x * CELL_SIZE.x);
+    next_y := int(point_to_check.y + CELL_SIZE.y / 2) / int(CELL_COUNT.x * CELL_SIZE.x);
 
-            player.velocity.x = -player.speed;
-
-        } else if rl.IsKeyDown(rl.KeyboardKey.UP) {
-
-            player.velocity.y = -player.speed;
-
-        } else if rl.IsKeyDown(rl.KeyboardKey.DOWN) {
-
-            player.velocity.y = player.speed;
-        }
+    current_x := int(player.position.x + CELL_SIZE.x / 2) % int(CELL_COUNT.x * CELL_SIZE.x);
+    current_y := int(player.position.y + CELL_SIZE.y / 2) / int(CELL_COUNT.x * CELL_SIZE.x);
     
-        x := int((player.position.x - grid_origin.x - CELL_SIZE.x / 2) / CELL_SIZE.x);
-        y := int((player.position.y - grid_origin.y - CELL_SIZE.y / 2) / CELL_SIZE.y);
+    next_cell_center := rl.Vector2{
+        f32(next_x) + CELL_SIZE.x / 2,
+        f32(next_y) + CELL_SIZE.y / 2,
+    };
 
-        cell := cells[y * int(CELL_COUNT.x) + x];
+    current_cell_center := rl.Vector2{
+        f32(current_x) + CELL_SIZE.x / 2,
+        f32(current_y) + CELL_SIZE.y / 2,
+    };
 
-        player.velocity.y = cell.wall[0] && player.velocity.y < 0 ? 0 : player.velocity.y;
-        player.velocity.x = cell.wall[1] && player.velocity.x > 0 ? 0 : player.velocity.x;
-        player.velocity.y = cell.wall[2] && player.velocity.y > 0 ? 0 : player.velocity.y;
-        player.velocity.x = cell.wall[3] && player.velocity.x < 0 ? 0 : player.velocity.x;
- 
-        player.initial_position = player.position;
-        player.is_moving = true;
-    
-    } else {
+    player_diff_to_next := next_cell_center.xy - player.position.xy;
+    player_dist_to_next := math.sqrt(player_diff_to_next.x * player_diff_to_next.x + player_diff_to_next.y * player_diff_to_next.y);
 
-        player.position.xy += player.velocity.xy * deltaTime;
-        diff := player.position.xy - player.initial_position.xy;
-        player.is_moving = (math.sqrt(diff.x * diff.x + diff.y * diff.y) <= CELL_SIZE.x / 2);
-    }
+    cell_diff_to_next := next_cell_center.xy - current_cell_center.xy;
+    cell_dist_to_next := math.sqrt(cell_diff_to_next.x * cell_diff_to_next.x + cell_diff_to_next.y * cell_diff_to_next.y);
+
+    cell := player_dist_to_next < cell_dist_to_next ? cells[next_y * int(CELL_COUNT.x) + next_x] : cells[current_y * int(CELL_COUNT.x) + current_x];
+
+    player.direction.y = cell.wall[0] && player.direction.y < 0 ? 0 : player.direction.y;
+    player.direction.x = cell.wall[1] && player.direction.x > 0 ? 0 : player.direction.x;
+    player.direction.y = cell.wall[2] && player.direction.y > 0 ? 0 : player.direction.y;
+    player.direction.x = cell.wall[3] && player.direction.x < 0 ? 0 : player.direction.x;
+
+    player.position.xy += player.direction.xy * player.speed * deltaTime;
 }
 
 draw_player :: proc(player : ^Player) {

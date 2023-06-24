@@ -37,12 +37,11 @@ main :: proc() {
 
     grid_origin :: rl.Vector2{8, 122};
 
-    player.is_moving = false;
     player.color = rl.YELLOW;
     player.radius = 12.0;
     player.speed = 100.0;
     player.position = get_player_spawn_position(cells[:], grid_origin);
-    player.velocity = rl.Vector2{0, 0};
+    player.direction = rl.Vector2{0, 0};
 
     for !rl.WindowShouldClose() {
 
