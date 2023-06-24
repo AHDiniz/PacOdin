@@ -35,17 +35,30 @@ main :: proc() {
 
     player : Player;
 
+    grid_origin :: rl.Vector2{8, 122};
+
+    player.is_moving = false;
     player.color = rl.YELLOW;
     player.radius = 12.0;
-    player.position = get_player_spawn_position(cells[:], rl.Vector2{8, 122});
+    player.speed = 100.0;
+    player.position = get_player_spawn_position(cells[:], grid_origin);
     player.velocity = rl.Vector2{0, 0};
 
     for !rl.WindowShouldClose() {
 
+        {
+            deltaTime := rl.GetFrameTime();
+
+            update_player(&player, cells[:], grid_origin, deltaTime);
+        }
+
         rl.BeginDrawing();
-        rl.ClearBackground(rl.BLACK);
-        draw_cells(cells[:], rl.Vector2{8, 122});
-        draw_player(&player);
+        {
+            rl.ClearBackground(rl.BLACK);
+    
+            draw_cells(cells[:], grid_origin);
+            draw_player(&player);
+        }
         rl.EndDrawing();
     }
 
